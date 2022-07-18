@@ -1,0 +1,55 @@
+<?php
+  require_once '../conexion.php';
+  require_once '../cors.php';
+
+  $json = file_get_contents('php://input');//Obtiene los datos del json
+  $datos_json = json_decode($json, true);//se decodifa el json y se crea un lista
+
+//Datos de las lista a variables individuales
+  $nombre = $datos_json['nombre'];
+  $telefono = $datos_json['telefono'];
+  $latitud = $datos_json['latitud'];
+  $longitud = $datos_json['longitud'];
+  $foto = $datos_json['foto'];
+
+  $query_exitoso = false;
+  
+  //Sentencia SQL para insertar los datos
+  $sql = 'insert into 
+    usuarios (nombre, telefono, latitud, longitud, foto) 
+    values (:nombre, :telefono, :latitud, :longitud, :foto)';
+  
+  //Se asigna los valores de los parametros
+  $valores = [
+    ':nombre' => $nombre,
+    ':telefono' => $telefono,
+    ':latitud' => $latitud,
+    ':longitud' => $longitud,
+    ':foto' => $foto,
+  ];
+
+//Se valida la conexion de la base de todos y se envian las sentencias
+  try {
+    $conexion = abrir_conexion();
+    $sentencia = $conexion->prepare($sql);
+    $query_exitoso = $sentencia->execute($valores);
+    $sentencia->closeCursor();
+    cerrar_conexion($conexion);
+  } catch (Exception $ex) {
+    
+    //Error lado de servidor
+    http_response_code(500);
+    die('Hubo un error en el servidor');
+  }
+//Error lado cliente
+  if (!$query_exitoso) {
+    http_response_code(400);
+    die('Hubo un error al insertar los datos');
+  }
+
+//Estado de la peticion si esta correcto
+  http_response_code(201);
+  echo json_encode(['Resultado'=>'Creado correctamente']);
+ 
+
+?>
